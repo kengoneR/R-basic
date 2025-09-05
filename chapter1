@@ -1,0 +1,28 @@
+# データ読み込み
+dataf <- readr::read_csv("rent-shonandai96-04.csv")
+
+# datafの中身を確認
+dataf
+glimpse(dataf)
+glimpse(dataf$rent)
+
+# 変数を限定する：dplyr::select()関数
+dplyr::select(dataf, rent, auto_lock)
+dataf %>% dplyr::select(rent, auto_lock)
+dataf2 <- dataf %>% dplyr::select(rent, service, floor, age)
+
+# 条件を満たすデータだけを取り出す：dplyr::filter()関数
+dataf %>% dplyr::filter(bus>0&age>10)
+
+# データを並び替える：dplyr::arrange()
+dataf %>% dplyr::arrange(walk)
+dataf %>% dplyr::arrange(-walk)
+dataf %>% dplyr::arrange(walk,floor)
+
+# 新しい変数を作成する：dplyr::mutate()
+dataf <- dataf %>% dplyr::mutate(
+  rent_total=rent+service,
+  dist=walk+bus)
+
+dataf$rent_total2 <- dataf$rent+dataf$service
+dataf %>% dplyr::select(rent, service, rent_total, rent_total2, walk, bus, dist)
