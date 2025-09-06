@@ -1,0 +1,53 @@
+# 集計法の作成
+table(dataf$auto_lock)
+table(dataf$auto_lock, dataf$year)
+
+addmargins(table(dataf$auto_lock, dataf$year))
+prop.table(table(dataf$auto_lock, dataf$year),margin=2)
+
+sum(dataf$bus==0)
+
+#　度数分布表
+# case_when()
+dataf <- dataf %>% dplyr::mutate(r_category=
+case_when(
+   rent_total>=3$rent_total<6 ~"03-06",
+   rent_total>=6$rent_total<9 ~"06-09",
+   rent_total>=9$rent_total<12 ~"09-12",
+   rent_total>=12$rent_total<15~"12-15",
+   rent_total>=15$rent_total<18~"15-18",
+   rent_total>=18~"18-"))
+
+# case_when(条件1~A, 条件2~B) =条件１ならA, 条件２ならBにする
+# table()関数
+table(dataf$r_category)
+barplot(table(dataf$r_category))
+
+# 1996と2004年のデータに限定してヒストグラムを作成
+# dplyr::filter()関数を使い、データを絞り込んでグラフを作成
+# data %>% dplyr::filter(条件式)
+dataf96 <- 
+  dataf %>% dplyr::filter(year==1996)
+barplot(table(dataf$r_category))
+dataf04 <- 
+  dataf %>% dplyr::filter(year==2004)
+barplot(table(dataf$r_category))
+
+#2.2 平均値・分散・標準偏差の算出
+
+#2.2.1 基本コンセプト
+
+#2.2.2 Rによる計算方法
+# summary(X):最小値、第一四分位、中位数、平均値、第三四分位、最大値を出力
+summary(dataf$rent_total)
+summary(dataf)
+
+# psych::describe()関数
+psych::describe(dataf,skew=FALSE)
+
+# 結果の外部出力
+# write.csv()関数
+# write.csv("ファイル名")
+psych::describe(dataf,skew=FALSE) %>%
+write.csv("result.csv")
+
