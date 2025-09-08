@@ -2,27 +2,167 @@
 dataf <- readr::read_csv("rent-shonandai96-04.csv")
 
 # datafの中身を確認
-dataf
-glimpse(dataf)
-glimpse(dataf$rent)
+> dataf
+# A tibble: 124 × 12
+    rent service floor   age auto_lock  year  walk   bus rent_total  dist
+   <dbl>   <dbl> <dbl> <dbl> <chr>     <dbl> <dbl> <dbl>      <dbl> <dbl>
+ 1  13.3    0.3   70.5  3.58 No         1996    10     0       13.6    10
+ 2  12.7    0.8   69.7  2.17 No         1996     1     0       13.5     1
+ 3  11      0     63.0  0    Yes        1996     5     5       11      10
+ 4  10.7    0.35  67.3  3.25 No         1996     5    15       11.0    20
+ 5  10.5    0.25  55.3  1    No         1996    10     0       10.8    10
+ 6  10.5    0.35  67.3  3.25 No         1996     5    15       10.8    20
+ 7  10.3    0.2   52.5  1.67 No         1996    10     0       10.5    10
+ 8  10.1    0.25  55.3  2.17 No         1996    15     0       10.4    15
+ 9  10      0.5   55.8  0    No         1996    10     0       10.5    10
+10   9.9    0.25  55.2  0    No         1996     8     0       10.2     8
+# ℹ 114 more rows
+# ℹ 2 more variables: rent_total2 <dbl>, r_category <chr>
+# ℹ Use `print(n = ...)` to see more rows
 
-# 変数を限定する：dplyr::select()関数
-dplyr::select(dataf, rent, auto_lock)
-dataf %>% dplyr::select(rent, auto_lock)
-dataf2 <- dataf %>% dplyr::select(rent, service, floor, age)
+> glimpse(dataf)
+Rows: 124
+Columns: 12
+$ rent        <dbl> 13.3, 12.7, 11.0, 10.7, 10.5, 10.5, 10.3, 10.1, 10.0, 9.…
+$ service     <dbl> 0.30, 0.80, 0.00, 0.35, 0.25, 0.35, 0.20, 0.25, 0.50, 0.…
+$ floor       <dbl> 70.500, 69.690, 63.010, 67.320, 55.270, 67.320, 52.500, …
+$ age         <dbl> 3.583333, 2.166667, 0.000000, 3.250000, 1.000000, 3.2500…
+$ auto_lock   <chr> "No", "No", "Yes", "No", "No", "No", "No", "No", "No", "…
+$ year        <dbl> 1996, 1996, 1996, 1996, 1996, 1996, 1996, 1996, 1996, 19…
+$ walk        <dbl> 10, 1, 5, 5, 10, 5, 10, 15, 10, 8, 6, 10, 10, 1, 4, 10, …
+$ bus         <dbl> 0, 0, 5, 15, 0, 15, 0, 0, 0, 0, 7, 0, 0, 10, 10, 0, 10, …
+$ rent_total  <dbl> 13.60, 13.50, 11.00, 11.05, 10.75, 10.85, 10.50, 10.35, …
+$ dist        <dbl> 10, 1, 10, 20, 10, 20, 10, 15, 10, 8, 13, 10, 10, 11, 14…
+$ rent_total2 <dbl> 13.60, 13.50, 11.00, 11.05, 10.75, 10.85, 10.50, 10.35, …
+$ r_category  <chr> "12-15", "12-15", "09-12", "09-12", "09-12", "09-12", "0…
+> glimpse(dataf$rent)
+ num [1:124] 13.3 12.7 11 10.7 10.5 10.5 10.3 10.1 10 9.9 ...
+>
 
-# 条件を満たすデータだけを取り出す：dplyr::filter()関数
-dataf %>% dplyr::filter(bus>0&age>10)
+> # 変数を限定する：dplyr::select()関数
+> dplyr::select(dataf, rent, auto_lock)
+# A tibble: 124 × 2
+    rent auto_lock
+   <dbl> <chr>    
+ 1  13.3 No       
+ 2  12.7 No       
+ 3  11   Yes      
+ 4  10.7 No       
+ 5  10.5 No       
+ 6  10.5 No       
+ 7  10.3 No       
+ 8  10.1 No       
+ 9  10   No       
+10   9.9 No       
+# ℹ 114 more rows
+# ℹ Use `print(n = ...)` to see more rows
 
-# データを並び替える：dplyr::arrange()
-dataf %>% dplyr::arrange(walk)
-dataf %>% dplyr::arrange(-walk)
-dataf %>% dplyr::arrange(walk,floor)
+> dataf %>% dplyr::select(rent, auto_lock)
+# A tibble: 124 × 2
+    rent auto_lock
+   <dbl> <chr>    
+ 1  13.3 No       
+ 2  12.7 No       
+ 3  11   Yes      
+ 4  10.7 No       
+ 5  10.5 No       
+ 6  10.5 No       
+ 7  10.3 No       
+ 8  10.1 No       
+ 9  10   No       
+10   9.9 No       
+# ℹ 114 more rows
+# ℹ Use `print(n = ...)` to see more rows
 
-# 新しい変数を作成する：dplyr::mutate()
-dataf <- dataf %>% dplyr::mutate(
-  rent_total=rent+service,
-  dist=walk+bus)
+> dataf2 <- dataf %>% dplyr::select(rent, service, floor, age)
+> 
+> # 条件を満たすデータだけを取り出す：dplyr::filter()関数
+> dataf %>% dplyr::filter(bus>0&age>10)
+# A tibble: 6 × 12
+   rent service floor   age auto_lock  year  walk   bus rent_total  dist
+  <dbl>   <dbl> <dbl> <dbl> <chr>     <dbl> <dbl> <dbl>      <dbl> <dbl>
+1  7.95       0  50.7  10.3 No         2004     5    10       7.95    15
+2  6.9        0  53.5  14.1 No         2004     5    10       6.9     15
+3  6.8        0  56.7  15.0 No         2004     3    10       6.8     13
+4  6.5        0  40.2  10.8 No         2004     3    10       6.5     13
+5  5.9        0  40.1  14.4 No         2004     4    10       5.9     14
+6  4.8        0  18.4  27.5 No         2004     5    15       4.8     20
+# ℹ 2 more variables: rent_total2 <dbl>, r_category <chr>
+> 
+> # データを並び替える：dplyr::arrange()
+> dataf %>% dplyr::arrange(walk)
+# A tibble: 124 × 12
+    rent service floor   age auto_lock  year  walk   bus rent_total  dist
+   <dbl>   <dbl> <dbl> <dbl> <chr>     <dbl> <dbl> <dbl>      <dbl> <dbl>
+ 1  12.7     0.8  69.7  2.17 No         1996     1     0       13.5     1
+ 2   9.2     0.8  58.4  0    Yes        1996     1    10       10      11
+ 3   9       0.8  57.6  0    Yes        1996     1    10        9.8    11
+ 4   6.8     0.3  39.7  1.5  No         1996     1    10        7.1    11
+ 5  18       0    85.6  0    Yes        2004     1    15       18      16
+ 6  17       0    85.6  0    Yes        2004     1    15       17      16
+ 7  16.5     0    85.6  0    Yes        2004     1    15       16.5    16
+ 8  16.3     0    85.6  0    Yes        2004     1    15       16.3    16
+ 9  16       0    85.6  0    Yes        2004     1    15       16      16
+10  15.5     0    85.6  0    Yes        2004     1    15       15.5    16
+# ℹ 114 more rows
+# ℹ 2 more variables: rent_total2 <dbl>, r_category <chr>
+# ℹ Use `print(n = ...)` to see more rows
 
-dataf$rent_total2 <- dataf$rent+dataf$service
-dataf %>% dplyr::select(rent, service, rent_total, rent_total2, walk, bus, dist)
+> dataf %>% dplyr::arrange(-walk)
+# A tibble: 124 × 12
+    rent service floor   age auto_lock  year  walk   bus rent_total  dist
+   <dbl>   <dbl> <dbl> <dbl> <chr>     <dbl> <dbl> <dbl>      <dbl> <dbl>
+ 1   6.2    0.2   42    9.5  No         1996    18     0        6.4    18
+ 2   6.1    0.2   49   11.8  No         1996    18     0        6.3    18
+ 3  10.1    0.25  55.3  2.17 No         1996    15     0       10.4    15
+ 4   8      0.2   50    4.83 No         1996    15     0        8.2    15
+ 5   6.3    0.2   26.4  9.42 No         1996    15     0        6.5    15
+ 6   7.3    0     24.9  0    Yes        2004    13     0        7.3    13
+ 7   7.3    0     24.9  0    Yes        2004    13     0        7.3    13
+ 8   7.2    0     24.9  0    Yes        2004    13     0        7.2    13
+ 9   7.1    0     24.9  0    Yes        2004    13     0        7.1    13
+10   7.1    0     24.9  0    Yes        2004    13     0        7.1    13
+# ℹ 114 more rows
+# ℹ 2 more variables: rent_total2 <dbl>, r_category <chr>
+# ℹ Use `print(n = ...)` to see more rows
+
+> dataf %>% dplyr::arrange(walk,floor)
+# A tibble: 124 × 12
+    rent service floor   age auto_lock  year  walk   bus rent_total  dist
+   <dbl>   <dbl> <dbl> <dbl> <chr>     <dbl> <dbl> <dbl>      <dbl> <dbl>
+ 1   6.6     0    23.2   0   No         2004     1     8        6.6     9
+ 2   6.6     0    23.2   0   No         2004     1     8        6.6     9
+ 3   6.6     0    23.2   0   No         2004     1     8        6.6     9
+ 4   6.5     0    23.2   0   No         2004     1     8        6.5     9
+ 5   6.3     0    23.2   0   No         2004     1     8        6.3     9
+ 6   6.3     0    23.2   0   No         2004     1     8        6.3     9
+ 7   6.3     0    23.2   0   No         2004     1     8        6.3     9
+ 8   6.3     0    23.2   0   No         2004     1     8        6.3     9
+ 9   6.3     0    23.2   0   No         2004     1     8        6.3     9
+10   6.8     0.3  39.7   1.5 No         1996     1    10        7.1    11
+# ℹ 114 more rows
+# ℹ 2 more variables: rent_total2 <dbl>, r_category <chr>
+# ℹ Use `print(n = ...)` to see more rows
+> 
+> # 新しい変数を作成する：dplyr::mutate()
+> dataf <- dataf %>% dplyr::mutate(
++   rent_total=rent+service,
++   dist=walk+bus)
+> 
+> dataf$rent_total2 <- dataf$rent+dataf$service
+> dataf %>% dplyr::select(rent, service, rent_total, rent_total2, walk, bus, dist)
+# A tibble: 124 × 7
+    rent service rent_total rent_total2  walk   bus  dist
+   <dbl>   <dbl>      <dbl>       <dbl> <dbl> <dbl> <dbl>
+ 1  13.3    0.3        13.6        13.6    10     0    10
+ 2  12.7    0.8        13.5        13.5     1     0     1
+ 3  11      0          11          11       5     5    10
+ 4  10.7    0.35       11.0        11.0     5    15    20
+ 5  10.5    0.25       10.8        10.8    10     0    10
+ 6  10.5    0.35       10.8        10.8     5    15    20
+ 7  10.3    0.2        10.5        10.5    10     0    10
+ 8  10.1    0.25       10.4        10.4    15     0    15
+ 9  10      0.5        10.5        10.5    10     0    10
+10   9.9    0.25       10.2        10.2     8     0     8
+# ℹ 114 more rows
+# ℹ Use `print(n = ...)` to see more rows
