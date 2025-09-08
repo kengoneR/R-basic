@@ -51,3 +51,49 @@ psych::describe(dataf,skew=FALSE)
 psych::describe(dataf,skew=FALSE) %>%
 write.csv("result.csv")
 
+# グループごとの統計量
+# summarise(関数名(計算の対象となる変数名))
+# summarise(新しい変数名＝関数名(計算の対象となる変数名))
+dataf %>% dplyr::group_by(year) %>% 
+  summarize(mean(rent_total),sd(rent_total))
+
+# tidyr::pivot_wider(names_from= 列方向の変数, values_from= 値)
+dataf %>% 
+　dplyr::group_by(year, auto_lock) %>% 
+  summarize(mean(rent_total))　%>% 
+  tidyr::pivot_wider(names_from=auto_lock, values_from=m_rent)
+
+# グループ間の平均値の差の検定
+# tableone::CreateTableOne(vars=c("変数名"), strata ="グループ化する変数名",
+　　　　　　　　　　　　　　　　factorVars = "変数名",　data=データフレーム )
+tableone::CreateTableOne(vars=c("rent_total","floor","age",
+                                "auto_lock"),strata ="year",factorVars = "auto_lock",data=dataf )
+
+tableone::CreateTableOne(vars="rent_total",strata="auto_lock",data=dataf)
+
+# 変数間の関係性の把握
+# 散布図・相関係数
+# Rによる散布図と相関係数の計算
+# 散布図 
+# ggplot( データフレーム名, 変数名等を指定) + グラフの種類 ( 色の指定 )
+# ggplot( data= データフレーム名, aes(x=横軸の変数, y=縦軸の変数))+
+           geom_point()
+ggplot(data=dataf, aes(x=age, y=rent_total))+
+  geom_point()
+ggplot(data=dataf, aes(x=floor, y=rent_total))+
+  geom_point()
+
+# png(file= "ファイル名 .png", width=幅を指定, height=高さを指定)
+# ここにggplotやbarplot関数で描画する
+　dev.off()
+
+png(filename = "scatter.png",width=400, height=300)
+ggplot(data = dataf, aes(x=floor, y=rent_total))+
+  geom_point()
+dev.off()
+
+# 相関係数行列
+cor(dataf$rent_total,dataf$floor,use="pairwise.complete.obs")
+
+dataf %>% dplyr::select(rent, dist, age, floor) -> dataf_cor
+cor(dataf_cor,use="pairwise.complete.obs")
