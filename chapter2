@@ -8,14 +8,14 @@ prop.table(table(dataf$auto_lock, dataf$year),margin=2)
 sum(dataf$bus==0)
 
 #　度数分布表
-# case_when()
+# case_when(条件1~A, 条件2~B) =条件１ならA, 条件２ならBにする
 dataf <- dataf %>% dplyr::mutate(r_category=
 case_when(
-   rent_total>=3$rent_total<6 ~"03-06",
-   rent_total>=6$rent_total<9 ~"06-09",
-   rent_total>=9$rent_total<12 ~"09-12",
-   rent_total>=12$rent_total<15~"12-15",
-   rent_total>=15$rent_total<18~"15-18",
+   rent_total>=3&rent_total<6 ~"03-06",
+   rent_total>=6&rent_total<9 ~"06-09",
+   rent_total>=9&rent_total<12 ~"09-12",
+   rent_total>=12&rent_total<15~"12-15",
+   rent_total>=15&rent_total<18~"15-18",
    rent_total>=18~"18-"))
 
 # case_when(条件1~A, 条件2~B) =条件１ならA, 条件２ならBにする
