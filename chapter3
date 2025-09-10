@@ -1,0 +1,160 @@
+# chapter3
+# Rによる回帰分析
+# lm()関数による回帰分析
+# model_liniear <- lm(fomura=被説明変数~説明変数, data=データフレーム名) 
+# summary(model_linear)
+
+model_linear <- lm(formula = rent_total ~ floor, data = dataf)
+summary(model_linear)
+
+# 説明力を上げるには？：重回帰分析
+# model_liniear <- lm(fomura=被説明変数~説明変数1+説明変数2, data=オブジェクト名) 
+# summary(model_linear)
+
+model_linear <- lm(formula = rent_total ~ floor + age, data = dataf)
+summary(model_linear)
+
+# 自由度調整済み決定係数
+
+# 重回帰モデルによる予測値
+# 予測値と残差を系列として出力する
+# predict()とresiduals()
+
+dataf <- dataf %>% dplyr::mutate(y_hat = predict(model_linear))
+dataf <- dataf %>% dplyr::mutate(res = residuals(model_linear))
+
+# dplyr::arrange(x) :xの小さい順に並び替え
+
+# 残差が小さい方から並べて, 実績値と予測値を表示させる
+dataf %>% dplyr::arrange(res) %>% dplyr::select(rent_total, y_hat, res, floor, age)
+
+# 複数の推定結果の取り纏め
+install.packages("modelsummary")
+
+# msummryの使い方
+# 新しいオブジェクト　<-
+#         list(
+#               "モデル名1" = lm(Y~X1,data =データフレーム),
+#               "モデル名2" = lm(Y~X1 + X2,data =データフレーム),
+#         )
+# modelsummary::msummary(新しいオブジェクト, オプション)
+
+# 結果の出力 modelsummaryのインストールとlibraryでの呼び出しが必要
+library("modelsummary")
+
+regs <-
+  list(
+    "model1" = lm(rent_total~floor,data = dataf),
+    "model2" = lm(rent_total~floor + age,data = dataf),
+    "model3" = lm(rent_total~floor + age + dist,data = dataf)
+  )
+modelsummary::msummary(regs, stars =TRUE , got_omit =
+                         'RMSE|AIC|BIC|Log.Lik.|F')
+
+# 質的な情報を取り込むには：ダミー変数の基礎
+# if_else(条件式, 正しいとき, 正しくないとき)
+dataf <- dataf %>% 
+  　　　 dplyr::mutate(d_autolock=if_else(auto_lock=="YES",1,0))
+glimpse(dataf)
+
+# case_when()関数
+dataf <- dataf %>% 
+  dplyr::mutate(d_autolock=
+                  case_when(auto_lock1=="YES"~1,
+                  auto_lock == "NO"~0))
+
+# データフレーム$新しい変数 <- 0
+# データフレーム$新しい変数 [条件式] <-1
+
+dataf$d_autolock2 <- 0
+dataf$d_autolock2[dataf$auto_lock=="YES"] <-1
+
+dataf %>% dplyr::select(rent_total,floor,auto_lock,d_autolock,d_autolock2)
+
+model_linear <- lm(formula = rent_total ~ floor + age + dist + auto_lock,data = dataf)
+summary(model_linear)
+
+# 他の要因をコントロールする意義
+
+# 回帰式の定式化の様々
+# 複数のダミー変数を導入する
+
+dataf <- readr::read_csv("wage_census2022.csv")
+
+# 学歴ダミー
+dataf <- dataf %>% 
+  dplyr::mutate(edu1 = if_else(education == 1,1,0))
+dataf <- dataf %>% 
+  dplyr::mutate(edu2 = if_else(education == 2,1,0))
+dataf <- dataf %>% 
+  dplyr::mutate(edu3 = if_else(education == 3,1,0))
+dataf <- dataf %>% 
+  dplyr::mutate(edu4 = if_else(education == 4,1,0))
+
+dataf %>% dplyr::select(age, male, education,edu1,edu2,edu3,edu4)
+
+lm(formula = wage ~ age + male + edu2 + edu3 + edu4, data = dataf)
+
+# factor()関数
+lm(formula = wage ~ age + male + factor(education), data = dataf)
+
+# 係数の変化に関するダミー変数（交差項）の導入
+dataf <- dataf %>% dlpyr::mutate(age_male=age*male)
+lm(formula = wage ~ age + male + age_male, data = dataf)
+
+# 非線形モデル：2次関数
+dataf <- dataf %>% dplyr::mutate(age2=age^2) #年齢の二乗
+lm(formula = wage ~ age + male + age2, data = dataf)
+# I()
+lm(formula = wage ~ age + male + I(age^2), data = dataf)
+
+# 多重共線性
+lm(formula = wage ~ age + tenure + male, data = dataf)
+
+cor(dataf$age, dataf$tenure, use="pairwise.complete.obs")
+
+lm(formula = wage ~ + tenure + male, data = dataf)
+
+# 対数変換した回帰式の係数の意味
+dataf <- readr::read.csv("gravity-g20asean.csv")
+dataf %>% dplyr::select(importer, Exporter, Trade, GDPex, GDPim
+                        distance, FTA)
+
+model_linear <- 
+  lm(log(Trade)~log(GDPex) + log(GDPim) +log(distance) + FTA,data =dataf)
+summary(model_linear)
+
+# 実データによる回帰分析のための下準備(ノイズ除去)
+dataf <- readr::read_csv("rent-kunitachi.csv")
+
+# データを確認
+glimpse(dataf)
+dataf %>% psych::describe(skew = FALSE)
+
+# 欠測値を特定する関数 is.na(変数)
+dataf <-dataf %>% dplyr::mutate(bus = if_else(is.na(bus),0,bus))
+glimpse(dataf$bus)
+psych::describe(dataf$bus,skew = FALSE)
+
+cor(dataf$floor,dataf$bus, use = "pairwise.complete.obs")
+
+# rentは一万円単位なので、単位をそろえる
+dataf <- dataf %>% dplyr::mutate(rent_total = rent + servise/10000)
+
+#大きい順(降順)で並び替え
+dataf %>% arrange(-rent)
+
+# rentが30000円未満のデータに限定、その外れ値の有無で比較(回帰分析)
+dataf2 <- dataf %>% dplyr::filter(dataf$rent<30000)
+regs <-
+  list(
+    "model1" = lm(rent_total~floorv+ age + dist + kunitachi_city ,data 
+                  = dataf),
+    "model1" = lm(rent_total~floorv+ age + dist + kunitachi_city ,data 
+                  = dataf2)
+  )
+modelsummary::msummary(regs, stars =TRUE , got_omit ='RMSE|AIC|BIC|Log.Lik.|F')
+
+# データフレーム$変数[条件式] <- NA
+dataf$rent_total[dataf$rent == 30000] <- NA
+dataf %>% dplyr::arrange(-rent) %>% dplyr::select(rent_total, rent)
