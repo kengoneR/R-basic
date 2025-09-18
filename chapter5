@@ -52,3 +52,93 @@ fixest::feols(Y~X1+X2+X3, data= データフレーム)
 # fixest::etable(結果オブジェクト1, 結果オブジェクト2, 結果オブジェクト3, 
 signif.code=c("***"=0.01,"**"=0.05, "*"=0.1), se.below=TRUE)
 # signif.codeはｐ値に応じて星をつけるオプション
+
+result_feols1 <- fixest::feols(emprate~caprate,data=dataf)
+result_feols2 <- fixest::feols(emprate~caprate|year,data=dataf)
+result_feols3 <- fixest::feols(emprate~caprate|pref+year,data=dataf)
+fixest::etable(result_feols1,result_feols2,resilt_feols3, se.below = TRUE)
+
+# この表をEXCELに出力するには
+tabcsv <- fixest::etable(result_feols1,result_feols2,resilt_feols3,
+signif.code=c("***"=0.01,"**"=0.05, "*"=0.1), se.below=TRUE)
+openxlsx::write.xlsx(tabcsv,"result.xlsx")
+
+# 差の差の分析としての固定効果モデル
+# 時間を通じて変化しない変数. dist_f_tokyo(distance from Tokyo) を導入
+result_feols1 <- fixest::feols(emprate~caprate+log(dist_f_tokyo+1),data=dataf)
+result_feols2 <- fixest::feols(emprate~caprate+log(dist_f_tokyo+1)|year,data=dataf)
+result_feols3 <- fixest::feols(emprate~caprate+log(dist_f_tokyo+1)|pref+year,data=dataf)
+
+# 変化率・ラグ項の扱い方
+
+# ラグ変数の作成方法
+# 新しいデータフレーム=pdata.frame(データフレーム, c("個体識別番号","時間識別番号"))
+
+# 読み込んだデータdatafに一度格納し、その後、pdata.frame()関数でパネル・データとして認識させたデータをpdatafとする
+dataf <- readr::read_csv("nlswork.csv")
+pdataf <- plm:pdata.frame(dataf,index=c("idcode","time"))
+
+# ラグを取る際はplm::lag()関数を用いる（この関数はdplyr::mutate()関数と一緒に使えない）
+pdataf$x_lag=plm::lag(x)
+
+# 次の2行ではt-1期からt期, およびt-2期からt期にかけての賃金変化(wgrowthとwgrowth2)を計算
+pdataf$wgrowth=pdataf$ln_wage-plm::lag(pdataf$ln_wage)
+pdataf$wgrowth2=pdataf$ln_wage- plm::lag(lag(pdataf$ln_wage))
+
+# t-1期からt期にかけて労働組合に参加したら1, そうでなければ0というダミー変数dunionを作成します。
+# pdatafに含まれるx,y,zで、yがz以上ならxに1を代入
+pdataf$x[pdataf$y>pdataf$z] <- 1
+
+# dunionの場合は、t-1期に組合非参加でt期に参加なら1, t-1期に組合非参加でt期も非参加なら0と定義する
+pdataf$dunion = case_when(
+(pdataf$union == 1 & plm::lag(pdata$union) == 0) ~ 1,
+(pdataf$union == 0 & plm::lag(pdata$union) == 0) ~ 0)
+
+# 変数が正しく作成されているか確認するために、dplyr::select()で変数を限定した上でデータの一部をConsoleペインに表示させる
+pdataf %>% dplyr::
+select(idcode,year,ln_wage,wgrowth,wgrowth2,union,dunion)
+
+# t時点で労働組合に入っていない人が、t+1期にかけて組合に参加すると賃金が変化するかを見ようとしているため、
+# 以下のようにdplyr::filter()関数でt-1時点に入っていない人に限定したオブジェクトを作成する
+pdataf2 <- pdataf %>% dplyr::filter(plm::lag(pdataf$union)==0)
+
+# パネル・データの構築方法
+# データ結合のパターンとRの関数
+
+# Rによるデータセットの作成方法
+
+# 1) Wide形式からLong形式への変換
+# EXCELファイルを読み込むreadxl()関数を使ってデータを読み込む
+# readxl::read_excel("ファイル名", sheet="シート名")
+caprate <- readxl::read_excel("asai-data-construct.xlsx", sheet="caprate")
+
+# Wide形式からLong形式に変換するにはtidyer::pivot_longer()関数を使う
+tidier::pivot_longer
+( オブジェクト, start_with("動かしたい値の入っている列の冒頭部分"),
+name_to="元々列名だったものを入れる列名", value_to="値の移動先の名前")
+
+# WIDE形式をLONG形式に変換
+dataf <- readr::read_excel
+("asai-data-construct.xlsx", sheet="caprate")
+
+# まずこれをLong形式に変換
+caprate<-tidier::pivot_longer(caprate,starts_with("caprate"),
+names_to="year",values_to="caprate")
+
+# gsub()関数を用いて文字列の一部を修正
+# gsub("A", "B", 変数)で変数から"A"を探して"B"に置き換える関数
+caprate$year <- gsub("caprate", "" , caprate$year)
+
+# as.numeric()関数を使って、文字列を数値列（実数値）にする
+object$x <- as.numeric(object$y)
+
+# 2) データの縦方向の結合
+# オブジェクト１の下にオブジェクト２を接続する場合、
+# bind_rows(オブジェクト1, オブジェクト2）
+caprate <- bind_rows(caprate_hokkaido, caprate)
+
+# 3) 2つのデータの横方向の接続
+# merge(オブジェクト1, オブジェクト2, by="キー変数")
+# merge(オブジェクト1, オブジェクト2, by=c("キー変数1","キー変数2"))
+dataf <- merge(caprate,emprate,by=c("year","pref_id"))
+
