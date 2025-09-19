@@ -1,99 +1,117 @@
-# 集計法の作成
+# このスクリプトで必要なパッケージ
+# tidyverse, summarytools, psych, tableone
+
+library(tidyverse)
+library(psych)
+library(tableone)
+
+# データ読み込み
+dataf <- 
+  readr::read_csv("rent-shonandai96-04.csv")
+
+## 下準備
+# mutate: 新しい変数の作成
+dataf <- 
+  dataf %>% dplyr::mutate(rent_total=rent+service)
+dataf <-
+  dataf %>% dplyr::mutate(dist=bus+walk)
+
+# クロス表
 table(dataf$auto_lock)
 table(dataf$auto_lock, dataf$year)
-
 addmargins(table(dataf$auto_lock, dataf$year))
 prop.table(table(dataf$auto_lock, dataf$year),margin=2)
 
+# 件数のカウント
 sum(dataf$bus==0)
 
-#　度数分布表
-# case_when(条件1~A, 条件2~B) =条件１ならA, 条件２ならBにする
-dataf <- dataf %>% dplyr::mutate(r_category=
-case_when(
-   rent_total>=3&rent_total<6 ~"03-06",
-   rent_total>=6&rent_total<9 ~"06-09",
-   rent_total>=9&rent_total<12 ~"09-12",
-   rent_total>=12&rent_total<15~"12-15",
-   rent_total>=15&rent_total<18~"15-18",
-   rent_total>=18~"18-"))
+##参考
+# 行方向の比率
+prop.table(table(dataf$auto_lock, dataf$year),margin=1)
+# 全体の比率
+prop.table(table(dataf$auto_lock, dataf$year))
 
-# case_when(条件1~A, 条件2~B) =条件１ならA, 条件２ならBにする
-# table()関数
+# 結果表をCSVファイルに出力
+prop.table(table(dataf$auto_lock, dataf$year),margin=1) %>%
+  print() %>%
+  write.csv("result.csv")
+
+#######################
+# 連続変数のカテゴリー化
+#######################
+dataf <-
+  dataf %>% 
+  mutate(r_category=case_when(
+    rent_total>=3&rent_total<6 ~"03-06",
+    rent_total>=6&rent_total<9 ~"06-09",
+    rent_total>=9&rent_total<12 ~"09-12",
+    rent_total>=12&rent_total<15~"12-15",
+    rent_total>=15&rent_total<18~"15-18",
+    rent_total>=18~"18-"))
+
 table(dataf$r_category)
+
+#ヒストグラムの作成
 barplot(table(dataf$r_category))
 
 # 1996と2004年のデータに限定してヒストグラムを作成
-# dplyr::filter()関数を使い、データを絞り込んでグラフを作成
-# data %>% dplyr::filter(条件式)
-dataf96 <- 
+dataf96 <-
   dataf %>% dplyr::filter(year==1996)
-barplot(table(dataf$r_category))
-dataf04 <- 
+barplot(table(dataf96$r_category))
+
+dataf04 <-
   dataf %>% dplyr::filter(year==2004)
-barplot(table(dataf$r_category))
+barplot(table(dataf04$r_category))
 
-#2.2 平均値・分散・標準偏差の算出
-
-#2.2.1 基本コンセプト
-
-#2.2.2 Rによる計算方法
-# summary(X):最小値、第一四分位、中位数、平均値、第三四分位、最大値を出力
+# 記述統計
 summary(dataf$rent_total)
 summary(dataf)
-
-# psych::describe()関数
+# describeはpsychパッケージのインストール&呼び出しが必要
+psych::describe(dataf)
 psych::describe(dataf,skew=FALSE)
 
-# 結果の外部出力
-# write.csv()関数
-# write.csv("ファイル名")
-psych::describe(dataf,skew=FALSE) %>%
-write.csv("result.csv")
+# CSVファイルに出力
+psych::describe(dataf,skew=FALSE) %>% 
+  write.csv("result.csv")
 
-# グループごとの統計量
-# summarise(関数名(計算の対象となる変数名))
-# summarise(新しい変数名＝関数名(計算の対象となる変数名))
-dataf %>% dplyr::group_by(year) %>% 
-  summarize(mean(rent_total),sd(rent_total))
-
-# tidyr::pivot_wider(names_from= 列方向の変数, values_from= 値)
+# グループ別の平均値
 dataf %>% 
-　dplyr::group_by(year, auto_lock) %>% 
-  summarize(mean(rent_total))　%>% 
+  dplyr::group_by(year) %>%
+  summarise(mean(rent_total),sd(rent_total))
+
+# 年別オートロックの有無別の平均値
+dataf %>% 
+  dplyr::group_by(year, auto_lock) %>% 
+  summarise(mean(rent_total))
+
+# tidyr::pivot_widerを使うと見栄えがよくなる
+dataf %>% 
+  dplyr::group_by(year, auto_lock) %>% 
+  summarise(m_rent=mean(rent_total)) %>%
   tidyr::pivot_wider(names_from=auto_lock, values_from=m_rent)
 
-# グループ間の平均値の差の検定
-# tableone::CreateTableOne(vars=c("変数名"), strata ="グループ化する変数名",
-　　　　　　　　　　　　　　　　factorVars = "変数名",　data=データフレーム )
-tableone::CreateTableOne(vars=c("rent_total","floor","age",
-                                "auto_lock"),strata ="year",factorVars = "auto_lock",data=dataf )
+#平均値の差の検定
+tableone::CreateTableOne(vars=c("rent_total","floor","age","auto_lock"),strata="year",factorVars="auto_lock",data=dataf)
 
 tableone::CreateTableOne(vars="rent_total",strata="auto_lock",data=dataf)
 
-# 変数間の関係性の把握
-# 散布図・相関係数
-# Rによる散布図と相関係数の計算
-# 散布図 
-# ggplot( データフレーム名, 変数名等を指定) + グラフの種類 ( 色の指定 )
-# ggplot( data= データフレーム名, aes(x=横軸の変数, y=縦軸の変数))+
-           geom_point()
+# ggplotによる散布図
+# 横軸:age
 ggplot(data=dataf, aes(x=age, y=rent_total))+
   geom_point()
+# 横軸:floor
 ggplot(data=dataf, aes(x=floor, y=rent_total))+
   geom_point()
 
-# png(file= "ファイル名 .png", width=幅を指定, height=高さを指定)
-# ここにggplotやbarplot関数で描画する
-　dev.off()
-
-png(filename = "scatter.png",width=400, height=300)
-ggplot(data = dataf, aes(x=floor, y=rent_total))+
+# 図をpngファイルに出力
+png(filename = "scatter.png",width=400,height=300)
+ggplot(data=dataf, aes(x=floor, y=rent_total))+
   geom_point()
 dev.off()
 
-# 相関係数行列
+# 相関係数
 cor(dataf$rent_total,dataf$floor,use="pairwise.complete.obs")
-
-dataf %>% dplyr::select(rent, dist, age, floor) -> dataf_cor
+# 変数を限定して相関係数行列を作成
+dataf_cor <-
+  dataf %>% dplyr::select(rent_total, dist, age, floor)
 cor(dataf_cor,use="pairwise.complete.obs")
