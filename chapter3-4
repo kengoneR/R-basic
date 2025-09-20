@@ -16,13 +16,15 @@ cor(dataf$floor,dataf$bus, use="pairwise.complete.obs")
 # 欠損値をゼロにする、その後busを確認
 # is.na(x)は「xが欠損値」を示す
 dataf <- dataf %>% dplyr::mutate(bus=if_else(is.na(bus),0,bus))
+# 欠損値ならゼロ, そうでなければbusの元の値を代入
 glimpse(dataf$bus)
-psych::describe(dataf$bus, skew=FALSE)
+psych::describe(dataf$bus, skew=FALSE) # NAが0に置き換わっていることが確認できる
 cor(dataf$floor,dataf$bus, use="pairwise.complete.obs")
 
 dataf %>% dplyr::select(rent,service,floor,walk,bus,n_room) %>% cor(use="pairwise.complete.obs")
 # cor()で変数に欠損値がある中、"pairwise.complete.obs"オプションを外すとどうなるか
 dataf %>% dplyr::select(rent,service,floor,walk,bus,n_room) %>% cor()
+# floorとbusの相関係数が計算されない
 
 # mutate: 新しい変数の作成
 dataf <- dataf %>%
@@ -67,7 +69,7 @@ dataf3 %>% psych::describe(skew=FALSE)
 ############################################
 # rent=30000のAlternativeな処理法
 # rent=30000の物件のrent_totalを欠損値にする
-dataf$rent_total[dataf$rent==30000] <-NA
+dataf$rent_total[dataf$rent==30000] <-NA 　# dataf$rent==30000の条件を満たす物件のrent_totalにNAを代入
 dataf %>% dplyr::arrange(-rent) %>% dplyr::select(rent_total, rent)
 result <- lm(rent_total~floor+age+dist+kunitachi_city ,data=dataf)
 summary(result)
