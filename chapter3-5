@@ -2,7 +2,7 @@
 # ただしlibrary(modelsummary)を使えばlibrary(sandwich)は不要
 library(tidyverse)
 library(modelsummary)
-library(estimatr)
+library(estimatr) # ロバスト（頑健）な標準誤差を簡単に計算できる
 
 # 3.5 不均一分散
 dataf <-
@@ -14,7 +14,7 @@ summary(model_linear)
 
 # 加重最小二乗法
 model_linear <-
-  lm(educ~income,data=dataf,weights=1/pop)
+  lm(educ~income,data=dataf,weights=1/pop) # 1/popをウエイトとする
 summary(model_linear)
 # 頑健な標準誤差
 model_linear <-
@@ -37,6 +37,7 @@ regs <-
   )
 # 表3.7
 modelsummary::msummary(regs, stars=TRUE , gof_omit='RMSE|AIC|BIC|Log.Lik.|F',vcov="HC2")
+# msummary()のvcovオプションをつけると頑健な標準誤差を出力できる
 
 lm_robust(rent_total~floor+age+dist,data=dataf) %>% summary()
 
