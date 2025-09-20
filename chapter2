@@ -1,9 +1,9 @@
 # このスクリプトで必要なパッケージ
 # tidyverse, summarytools, psych, tableone
 
-library(tidyverse) 
-library(psych)
-library(tableone)
+library(tidyverse) # dplyrとかggplotとかが含まれる
+library(psych) # describe()で平均・標準偏差・歪度などをまとめて表示できる。あとcorr.test()で相関係数＋有意確率とか
+library(tableone)　#　　
 
 # データ読み込み
 dataf <- 
@@ -39,7 +39,7 @@ prop.table(table(dataf$auto_lock, dataf$year),margin=1) %>%
 #######################
 # 連続変数のカテゴリー化
 #######################
-♯ 賃貸料3万円刻みで5つの階級から構成されるカテゴリー変数を作成
+# 賃貸料3万円刻みで5つの階級から構成されるカテゴリー変数を作成
 dataf <-
   dataf %>% 
   mutate(r_category=case_when(
@@ -65,10 +65,10 @@ dataf04 <-
 barplot(table(dataf04$r_category))
 
 # 記述統計
-summary(dataf$rent_total)　
+summary(dataf$rent_total) # rent_totalの統計量(最小値, 第一四分位, 中位数, 平均値, 第三四分位, 最大値)を出力
 summary(dataf)
 # describeはpsychパッケージのインストール&呼び出しが必要
-psych::describe(dataf)
+psych::describe(dataf) # pshch::describe()関数は、標本数(n)や平均(mean),標準偏差(sd),最大(max),最小(min)などの統計量を出力する
 psych::describe(dataf,skew=FALSE)
 
 # CSVファイルに出力
