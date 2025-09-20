@@ -1,7 +1,7 @@
 # このスクリプトで必要なパッケージ
 # tidyverse
-# modelsummary
-# openxlsx
+# modelsummary # 回帰分析の係数・標準偏差・p値などを出力
+# openxlsx　# RでExcelファイル(.xlsx)を読み書き・編集する
 
 library(tidyverse)
 library(modelsummary)
@@ -19,7 +19,10 @@ dataf <- dataf %>%
 dataf <- dataf %>%
   dplyr::mutate(dist=bus+walk) 
 
-# 3.2 回帰分析
+# 3.2 回帰分析（単回帰分析）
+# model_linear <- 
+　lm(被説明変数~説明変数,data=データフレーム名)
+summary(model_linear)
 model_linear <-
   lm(rent_total~floor,data=dataf)
 summary(model_linear)
@@ -42,7 +45,8 @@ model_linear <-
   lm(rent_total~floor+age+dist,data=dataf)
 summary(model_linear)
 
-# 予測値
+# 予測値（理論値）
+# model_linearに格納した推計結果からpredict()で予測値、residuals()で残差を計算し、dplyr::mutate()で新しい変数y_hat, resに格納
 model_linear <-
   lm(rent_total~floor+age, data=dataf)
 dataf <- dataf %>%
@@ -53,8 +57,16 @@ dataf <- dataf %>%
 dataf %>%
   dplyr::arrange(res) %>%
   dplyr::select(rent_total, y_hat, res, floor, age)
+# お買い得物件（残差が最も小さなもの）を見つけられる
 
+# 複数の推定結果の取り纏め
 # 結果の出力 modelsummaryのインストールとlibraryでの呼び出しが必要
+# 新しいオブジェクト <-
+  list(
+    "モデル名1" =lm(Y~X1,data=データフレーム), # ←カンマ忘れずに
+    "モデル名2" =lm(Y~X1+X2,data=データフレーム)
+  )
+modelsummary::msummary(新しいオブジェクト, オプション)
 regs <-
   list(
     "model1" =lm(rent_total~floor,data=dataf),
@@ -62,6 +74,8 @@ regs <-
     "model3" =lm(rent_total~floor+age+dist,data=dataf)
   )
 modelsummary::msummary(regs, stars=TRUE , gof_omit='RMSE|AIC|BIC|Log.Lik.|F')
+# stars=TRUEは統計的に有意な変数に+や*をつけるオプション
+# gof_omit='RMSE|AIC|BIC|Log.Lik.|F'はAICなどの指標を表示しないという意味
 
 #################################
 # 以下はmsummaryのオプションを変更すると結果がどう変わるかを示しています
@@ -89,16 +103,18 @@ openxlsx::write.xlsx(results_tab, 'results.xlsx')
 dataf <-
   dataf %>%
   dplyr::mutate(d_autolock=if_else(auto_lock=="Yes",1,0))
+# この場合auto_lockがYESならd_autolockに1を, 正しくなければ0を代入
 
 #方法2 dplyr::mutateとcase_whenを使う方法
 dataf <-
   dataf %>%
   dplyr::mutate(d_autolock1=case_when(auto_lock=="Yes"~1,
                                      auto_lock=="No"~0))
+# case_when(条件1~A, 条件2~B)= 条件1ならA, 条件2ならBにする
 
 #方法3 []で条件式を指定する方法
-dataf$d_autolock2 <- 0
-dataf$d_autolock2[dataf$auto_lock=="Yes"] <-1
+dataf$d_autolock2 <- 0　# 新しい変数d_autolock2を作成して0を代入
+dataf$d_autolock2[dataf$auto_lock=="Yes"] <-1 # 条件を満たすデータに1を代入
 
 # 作成された変数の確認
 dataf %>% dplyr::select(rent_total,floor,auto_lock,d_autolock,d_autolock1,d_autolock2)
