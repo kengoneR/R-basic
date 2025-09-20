@@ -1,11 +1,11 @@
 library(tidyverse)
-library(lmtest)
+library(lmtest) # 回帰モデル（lmなど）の統計的検定
 library(modelsummary)
-library(DescTools)
+library(DescTools) # 記述統計・検定・便利関数
 library(margins)
 library(openxlsx)
-library(censReg)
-library(mfx)
+library(censReg) # 検閲(censored)回帰モデル、トービット回帰
+library(mfx) # ロジット/プロビット回帰など非線形モデルの限界効果(marginal effects)を計算
 
 # 事前にパッケージwooldridgeのインストールが必要
 data(mroz, package='wooldridge')
@@ -28,8 +28,9 @@ summary(mroz$y_hat)
 #-----------------------------
 # ロジット・モデルの推定  
 #-----------------------------
-result1 <- glm(inlf~age+educ+kidslt6+kidsge6,family=binomial(link=logit),data=mroz)
-summary(result1)
+# プロビット・モデルの推計はglm関数を使う
+result1 <- glm(inlf~age+educ+kidslt6+kidsge6,family=binomial(link=logit),data=mroz) # プロビット・モデルの場合は"logit"→"probit"
+summary(result1)library(tidyverse)
 
 # 予測値の計算
 mroz <- mroz %>%
@@ -44,6 +45,7 @@ pseudoR2 <-
 pseudoR2
 
 # 限界効果の出力:mfxパッケージのインストールと呼び出しが必要
+# 説明変数が1大きくなった時に確率がどう変化するかをみるため, 限界効果に注目
 res1_mfx <- 
   logitmfx(inlf~age+educ+kidslt6+kidsge6,
            data=mroz)
@@ -77,16 +79,9 @@ regs <-
     "model1" <- glm(inlf~age+educ+kidslt6+kidsge6,family=binomial(link=logit),data=mroz),
     "model2" <- glm(inlf~age+educ+kidslt6+kidsge6,family=binomial(probit),data=mroz)
     )
-msummary(regs,  stars=TRUE,gof_omit = 'AIC|BIC|Log.Lik.|F',vcov="HC1")
+msummary(regs,  stars=TRUE,gof_omit = 'AIC|BIC|Log.Lik.|F',vcov="HC1") # vcov="HC1"をつけることで頑健な標準誤差を表示
 res_table <- modelsummary(regs, stars=TRUE,gof_omit = 'AIC|BIC|Log.Lik.|F',vcov="HC1",output="data.frame")
 openxlsx::write.xlsx(res_table,"result.xlsx")
-
-regs <- 
-  list(
-    "model1" <- glm(inlf~age+educ+kidslt6+kidsge6,family=binomial(link=logit),data=mroz),
-    "model2" <- glm(inlf~age+educ+kidslt6+kidsge6,family=binomial(probit),data=mroz)
-  )
-msummary(regs, gof_omit = 'AIC|BIC|Log.Lik.|F',vcov="HC1")
 
 
 #-----------------------------
@@ -95,30 +90,14 @@ msummary(regs, gof_omit = 'AIC|BIC|Log.Lik.|F',vcov="HC1")
 #被説明変数をhoursにする
 #平均・最大・最小値
 summary(mroz$hours)
-# 就業女性に限定して労働時間hoursの平均値を計算
+# 就業女性（inlf==1)に限定して労働時間hoursの平均値を計算
 mroz %>% filter(inlf==1) %>% summarize(m_horus=mean(hours))
 
 # censRegパッケージのインストールと呼び出しが必要
-res_tobit1 <-censReg::censReg(hours~age+educ+kidslt6+kidsge6, left=0, data=mroz)
+res_tobit1 <-censReg::censReg(hours~age+educ+kidslt6+kidsge6, left=0, data=mroz) # left=打ち切り点
 summary(res_tobit1)
-summary(margEff(res_tobit1))
+summary(margEff(res_tobit1)) # 限界効果を計算するためにmargEff()関数を使う
 
 # 最小二乗法（OLS）との比較
 result_ols <-lm(hours~age+educ+kidslt6+kidsge6,data=mroz)
 summary(result_ols)
-
-
-tobits <-	
-  list(	
-    "res_tobit1" <-	
-      censReg(hours~age+educ+kidslt6+kidsge6,	
-              left=0,	
-              data=mroz),	
-    "result_ols" <-	
-      lm(hours~age+educ+kidslt6+kidsge6,	
-         data=mroz)	
-  )	
-msummary(tobits, stars=TRUE, gof_omit = 'AIC|BIC|Log.Lik.|F')	
-res_table <-	
-  modelsummary(tobits, gof_omit = 'AIC|BIC|Log.Lik.|F',output="data.frame")	
-write.xlsx(res_table,"tobit.xlsx")
