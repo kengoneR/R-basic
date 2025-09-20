@@ -3,7 +3,7 @@
 
 library(tidyverse) # dplyrとかggplotとかが含まれる
 library(psych) # describe()で平均・標準偏差・歪度などをまとめて表示できる。あとcorr.test()で相関係数＋有意確率とか
-library(tableone)　　
+library(tableone) # 割合、郡ごとの比較(t検定, χ^2検定など）
 
 # データ読み込み
 dataf <- 
@@ -69,7 +69,7 @@ summary(dataf$rent_total) # rent_totalの統計量(最小値, 第一四分位, �
 summary(dataf)
 # describeはpsychパッケージのインストール&呼び出しが必要
 psych::describe(dataf) # pshch::describe()関数は、標本数(n)や平均(mean),標準偏差(sd),最大(max),最小(min)などの統計量を出力する
-psych::describe(dataf,skew=FALSE)
+psych::describe(dataf,skew=FALSE)　# skew=FALSEを付けない場合、尖度や歪度など計12種類の統計量が出力される
 
 # CSVファイルに出力
 psych::describe(dataf,skew=FALSE) %>% 
@@ -78,39 +78,43 @@ psych::describe(dataf,skew=FALSE) %>%
 # グループ別の平均値
 dataf %>% 
   dplyr::group_by(year) %>%
-  summarise(mean(rent_total),sd(rent_total))
+  summarise(mean(rent_total),sd(rent_total)) # summarize(関数名(計算の対象となる変数名))
 
 # 年別オートロックの有無別の平均値
 dataf %>% 
   dplyr::group_by(year, auto_lock) %>% 
   summarise(mean(rent_total))
 
-# tidyr::pivot_widerを使うと見栄えがよくなる
+# tidyr::pivot_widerを使うと見栄えがよくなる（表頭項目と表示させる値を指定できる）
 dataf %>% 
   dplyr::group_by(year, auto_lock) %>% 
   summarise(m_rent=mean(rent_total)) %>%
-  tidyr::pivot_wider(names_from=auto_lock, values_from=m_rent)
+  tidyr::pivot_wider(names_from=auto_lock, values_from=m_rent) 
+# tidyr::pivot_wider(names_from=列方向の変数, values_from=値)
 
 #平均値の差の検定
-tableone::CreateTableOne(vars=c("rent_total","floor","age","auto_lock"),strata="year",factorVars="auto_lock",data=dataf)
-
-tableone::CreateTableOne(vars="rent_total",strata="auto_lock",data=dataf)
+#1994と2004の平均値は統計的に有意な差があるか
+  tableone::CreateTableOne(vars=c("rent_total","floor","age","auto_lock"),strata="year",factorVars="auto_lock",data=dataf)
+  tableone::CreateTableOne(vars="rent_total",strata="auto_lock",data=dataf)
+# tableone::CreateTableOne(vars="変数名",strata="グループ化する変数名",factorVars="変数名",data=dataf)
 
 # ggplotによる散布図
-# 横軸:age
+# ggplot(data=データフレーム名, aes(x=横軸の変数, y=縦軸の変数))+
+  geom_point()
 ggplot(data=dataf, aes(x=age, y=rent_total))+
   geom_point()
-# 横軸:floor
 ggplot(data=dataf, aes(x=floor, y=rent_total))+
   geom_point()
 
 # 図をpngファイルに出力
+# png(filename = "ファイル名",width=幅を指定,height=高さを指定)
 png(filename = "scatter.png",width=400,height=300)
 ggplot(data=dataf, aes(x=floor, y=rent_total))+
   geom_point()
-dev.off()
+dev.off() # 描画先を閉じる
 
 # 相関係数
+# cor(データフレーム$変数1,データフレーム$変数2,use="pairwise.complete.obs")
 cor(dataf$rent_total,dataf$floor,use="pairwise.complete.obs")
 # 変数を限定して相関係数行列を作成
 dataf_cor <-
