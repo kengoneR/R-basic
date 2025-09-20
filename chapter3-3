@@ -7,9 +7,10 @@ library(tidyverse)
 # 3.3.5 Gravity model 両対数モデル
 dataf <- 
   readr::read_csv("gravity-g20asean.csv")
-
 dataf %>% dplyr::select(Importer, Exporter, Trade, GDPex, GDPim, distance, FTA)
+# 二国間の貿易額を二国の経済規模と貿易コスト（距離）で分析するモデル＝重力モデル
 
+# log()を使って自然対数に変換
 model_linear <-
   lm(log(Trade)~log(GDPex)+log(GDPim)+log(distance)+FTA,data=dataf)
 summary(model_linear)
