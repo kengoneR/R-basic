@@ -1,7 +1,7 @@
 # このスクリプトで必要なパッケージ
 # tidyverse, summarytools, psych, tableone
 
-library(tidyverse)
+library(tidyverse) 
 library(psych)
 library(tableone)
 
@@ -17,13 +17,13 @@ dataf <-
   dataf %>% dplyr::mutate(dist=bus+walk)
 
 # クロス表
-table(dataf$auto_lock)
+table(dataf$auto_lock) # オートロック付き物件が何件あるか
 table(dataf$auto_lock, dataf$year)
-addmargins(table(dataf$auto_lock, dataf$year))
-prop.table(table(dataf$auto_lock, dataf$year),margin=2)
+addmargins(table(dataf$auto_lock, dataf$year)) # 列方向, 行方向の合計を追加
+prop.table(table(dataf$auto_lock, dataf$year),margin=2) # 列方向に対する比率を計算
 
-# 件数のカウント
-sum(dataf$bus==0)
+# 件数のカウント 
+sum(dataf$bus==0) # 合計値を計算する関数sum()と条件式を組み合わせると「条件式を満たすサンプル数」を計算
 
 ##参考
 # 行方向の比率
@@ -39,6 +39,7 @@ prop.table(table(dataf$auto_lock, dataf$year),margin=1) %>%
 #######################
 # 連続変数のカテゴリー化
 #######################
+♯ 賃貸料3万円刻みで5つの階級から構成されるカテゴリー変数を作成
 dataf <-
   dataf %>% 
   mutate(r_category=case_when(
@@ -49,10 +50,10 @@ dataf <-
     rent_total>=15&rent_total<18~"15-18",
     rent_total>=18~"18-"))
 
-table(dataf$r_category)
+table(dataf$r_category) # table()関数で r_categoryの件数を表にする(度数分布表）
 
 #ヒストグラムの作成
-barplot(table(dataf$r_category))
+barplot(table(dataf$r_category)) # 表から棒グラフを作成
 
 # 1996と2004年のデータに限定してヒストグラムを作成
 dataf96 <-
@@ -64,7 +65,7 @@ dataf04 <-
 barplot(table(dataf04$r_category))
 
 # 記述統計
-summary(dataf$rent_total)
+summary(dataf$rent_total)　
 summary(dataf)
 # describeはpsychパッケージのインストール&呼び出しが必要
 psych::describe(dataf)
