@@ -3,7 +3,7 @@
 
 library(tidyverse) # dplyrとかggplotとかが含まれる
 library(psych) # describe()で平均・標準偏差・歪度などをまとめて表示できる。あとcorr.test()で相関係数＋有意確率とか
-library(tableone)　#　　
+library(tableone)　　
 
 # データ読み込み
 dataf <- 
