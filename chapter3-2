@@ -14,7 +14,8 @@ dataf %>%
   dplyr::group_by(education) %>%
   summarize(mean(wage))
 
-# 学歴ダミー
+# 賃金水準が学歴間でどの程度異なるかを分析
+# まず学歴ダミーを導入
 dataf <-
   dataf %>%
   mutate(edu1=if_else(education==1,1,0))
@@ -28,6 +29,8 @@ dataf <-
   dataf %>%
   mutate(edu4=if_else(education==4,1,0))
 
+# 出来上がった学歴ダミーを確認
+# dplyr::select関数で変数を限定した上で, Consoleペインにデータを表示させる
 dataf %>%
   dplyr::select(age, male, education,edu1,edu2,edu3,edu4)
 
@@ -68,13 +71,15 @@ summary(model_linear)
 #########################################
 
 # 交差項
+# 賃金に対する年齢の影響を示す係数が男女間で異なると考えられるため、
+# 男性ダミー(male)と年齢(age)の積（交差項）を説明変数に追加する
 dataf <-
   dataf %>%
   mutate(age_male=age*male)
 glimpse(dataf)
 
 model_linear <-
-  lm(wage~age+male+age_male,data=dataf)
+  lm(wage~age+male+age_male,data=dataf) # この賃金関数を推計
 summary(model_linear)
 
 # 同じことを、":"で。
@@ -91,10 +96,11 @@ model_linear <-
 summary(model_linear)
 
 # 年齢の２乗項
+# 年齢と賃金の関係は直線的ではなく、一定の年齢に達するとむしろ低下する
+# このような非線形の関係にある場合の対処の一つに、二次関数による近似がある
 model_linear <-
   lm(wage~age+male,data=dataf)
 summary(model_linear)
-
 
 dataf <-
   dataf %>%
@@ -103,6 +109,7 @@ dataf <-
 model_linear <-
   lm(wage~age+male+age2,data=dataf)
 summary(model_linear)
+# y=α+β1X+β2X^2を微分=0で頂点を求める（今回は二乗値の係数がマイナス, 上に凸)
 
 model_linear <-
   lm(wage~age+male+I(age^2),data=dataf)
@@ -116,9 +123,12 @@ summary(model_linear)
 model_linear <-
   lm(wage~age+tenure+male,data=dataf)
 summary(model_linear)
+# 年齢と勤続年数には強い相関がある2変数を同時に説明変数に加えると、
+# それぞれの係数を正しく推計できない（多重共線性）
 
 cor(dataf$age, dataf$tenure, use="pairwise.complete.obs")
 
+# 対処法として, 片方の変数を除去する
 model_linear <-
   lm(wage~tenure+male,data=dataf)
 summary(model_linear)
