@@ -1,62 +1,124 @@
-# 事前にsandwichパッケージをインストールが必要
-# ただしlibrary(modelsummary)を使えばlibrary(sandwich)は不要
 library(tidyverse)
+library(lmtest)
 library(modelsummary)
-library(estimatr)
+library(DescTools)
+library(margins)
+library(openxlsx)
+library(censReg)
+library(mfx)
 
-# 3.5 不均一分散
-dataf <-
-  readr::read_csv("educ-income.csv")
-# 最小二乗法
-model_linear <-
-  lm(educ~income,data=dataf)
-summary(model_linear)
+# 事前にパッケージwooldridgeのインストールが必要
+data(mroz, package='wooldridge')
 
-# 加重最小二乗法
-model_linear <-
-  lm(educ~income,data=dataf,weights=1/pop)
-summary(model_linear)
-# 頑健な標準誤差
-model_linear <-
-  lm_robust(educ~income,data=dataf)
-summary(model_linear)
+# データ読み込み
+mroz <- read_csv("mroz.csv")
 
-# msummaryで頑健な標準誤差を出力
-dataf <- 
-  readr::read_csv("rent-shonandai96-04.csv")
-# mutate: 新しい変数の作成
-dataf <- dataf %>%
-  dplyr::mutate(rent_total=rent+service) 
-dataf <- dataf %>%
-  dplyr::mutate(dist=bus+walk) 
-regs <-
+table(mroz$inlf)
+
+#-----------------------------
+# 最小二乗法による推計
+#-----------------------------
+result0 <- lm(inlf~age+educ+kidslt6+kidsge6,data=mroz)
+summary(result0)
+# 予測値の計算
+mroz <- mroz %>% mutate(y_hat=predict(result0)) 
+summary(mroz$y_hat)
+
+
+#-----------------------------
+# ロジット・モデルの推定  
+#-----------------------------
+result1 <- glm(inlf~age+educ+kidslt6+kidsge6,family=binomial(link=logit),data=mroz)
+summary(result1)
+
+# 予測値の計算
+mroz <- mroz %>%
+  dplyr::mutate(prob_res1=predict(result1,type="response"))
+summary(mroz$prob_res1)
+
+# McFadden's Pseudo R2 （疑似決定係数）
+DescTools::PseudoR2(result1)
+
+pseudoR2 <- 
+  1 - (result1$deviance) / (result1$null.deviance)
+pseudoR2
+
+# 限界効果の出力:mfxパッケージのインストールと呼び出しが必要
+res1_mfx <- 
+  logitmfx(inlf~age+educ+kidslt6+kidsge6,
+           data=mroz)
+res1_mfx
+
+# なお、以下で頑健な標準誤差を出力できます
+lmtest::coeftest(result1, vcovHC,type="HC1")
+
+
+#-----------------------------
+# プロビット・モデルの推定  
+#-----------------------------
+result2 <- glm(inlf~age+educ+kidslt6+kidsge6,family=binomial(probit),data=mroz)
+summary(result2)
+
+# McFadden's Pseudo R2 （疑似決定係数）
+DescTools::PseudoR2(result2)
+
+# mfxパッケージのインストールと呼び出しが必要
+res2_mfx <- 
+  probitmfx(inlf~age+educ+kidslt6+kidsge6,
+           data=mroz)
+res2_mfx
+
+#-----------------------------
+# msummaryによる結果の出力
+# 頑健な標準誤差による結果を出力
+#-----------------------------
+regs <- 
   list(
-    "model1" =lm(rent_total~floor,data=dataf),
-    "model2" =lm(rent_total~floor+age,data=dataf),
-    "model3" =lm(rent_total~floor+age+dist,data=dataf)
-  )
-# 表3.7
-modelsummary::msummary(regs, stars=TRUE , gof_omit='RMSE|AIC|BIC|Log.Lik.|F',vcov="HC2")
+    "model1" <- glm(inlf~age+educ+kidslt6+kidsge6,family=binomial(link=logit),data=mroz),
+    "model2" <- glm(inlf~age+educ+kidslt6+kidsge6,family=binomial(probit),data=mroz)
+    )
+msummary(regs,  stars=TRUE,gof_omit = 'AIC|BIC|Log.Lik.|F',vcov="HC1")
+res_table <- modelsummary(regs, stars=TRUE,gof_omit = 'AIC|BIC|Log.Lik.|F',vcov="HC1",output="data.frame")
+openxlsx::write.xlsx(res_table,"result.xlsx")
 
-lm_robust(rent_total~floor+age+dist,data=dataf) %>% summary()
-
-regs <-
+regs <- 
   list(
-    "model1" =lm_robust(rent_total~floor,data=dataf),
-    "model2" =lm_robust(rent_total~floor+age,data=dataf),
-    "model3" =lm_robust(rent_total~floor+age+dist,data=dataf)
+    "model1" <- glm(inlf~age+educ+kidslt6+kidsge6,family=binomial(link=logit),data=mroz),
+    "model2" <- glm(inlf~age+educ+kidslt6+kidsge6,family=binomial(probit),data=mroz)
   )
-modelsummary::msummary(regs, stars=TRUE , gof_omit='RMSE|AIC|BIC|Log.Lik.|F')
+msummary(regs, gof_omit = 'AIC|BIC|Log.Lik.|F',vcov="HC1")
 
 
-##################################
-# 発展 標準誤差のクラスタリング
-##################################
-dataf <-
-  readr::read_csv("acemoglu2016.csv")
+#-----------------------------
+# Tobit model
+#-----------------------------
+#被説明変数をhoursにする
+#平均・最大・最小値
+summary(mroz$hours)
+# 就業女性に限定して労働時間hoursの平均値を計算
+mroz %>% filter(inlf==1) %>% summarize(m_horus=mean(hours))
 
-# sic3でクラスタリングした場合
-model_linear <-
-  lm_robust(dL~dIMP,data=dataf,clusters=sic3)
-summary(model_linear)
+# censRegパッケージのインストールと呼び出しが必要
+res_tobit1 <-censReg::censReg(hours~age+educ+kidslt6+kidsge6, left=0, data=mroz)
+summary(res_tobit1)
+summary(margEff(res_tobit1))
 
+# 最小二乗法（OLS）との比較
+result_ols <-lm(hours~age+educ+kidslt6+kidsge6,data=mroz)
+summary(result_ols)
+
+
+tobits <-	
+  list(	
+    "res_tobit1" <-	
+      censReg(hours~age+educ+kidslt6+kidsge6,	
+              left=0,	
+              data=mroz),	
+    "result_ols" <-	
+      lm(hours~age+educ+kidslt6+kidsge6,	
+         data=mroz)	
+  )	
+msummary(tobits, stars=TRUE, gof_omit = 'AIC|BIC|Log.Lik.|F')	
+res_table <-	
+  modelsummary(tobits, gof_omit = 'AIC|BIC|Log.Lik.|F',output="data.frame")	
+write.xlsx(res_table,"tobit.xlsx")
