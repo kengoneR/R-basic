@@ -3,36 +3,37 @@
 # fixestパッケージのインストールが必要
 library(tidyverse)
 library(estimatr)
-library(fixest)
+library(fixest) # 固定効果（fixed effects）を含む回帰分析を高速かつ柔軟に実行できる
 
 # データ読み込み
 dataf <- readr::read_csv("asai00-10.csv")
 
-# プーリング回帰
+# プーリング回帰 # 個体差（pref）や時間差（year）を無視したシンプルOLS # lm_robust で ロバスト標準誤差を計算
 result1 <- estimatr::lm_robust(emprate~caprate,data=dataf)
 summary(result1)
 
-# 年次ダミーを作成
+# 年次ダミーを作成 # 2005年・2010年の観測に対して 1/0 のダミー変数を作成, これにより 年次固定効果を簡易的に導入できる
 dataf <- dataf %>% dplyr::mutate(y2005=if_else(year==2005,1,0))
 dataf <- dataf %>% dplyr::mutate(y2010=if_else(year==2010,1,0))
 
-# 年次固定効果（年次ダミー）を導入した推計
+# 年次固定効果（年次ダミー）を導入した推計 # 年次ダミーを入れることで、2000年を基準に 年ごとの平均の違いを補正
 result2 <- estimatr::lm_robust(emprate~caprate+y2005+y2010,data=dataf)
 summary(result2)
 
-# factor関数で年次ダミーを導入
+# factor関数で年次ダミーを導入 # factor(year) を使う方法でも同じ固定効果を導入可能
 result2 <- estimatr::lm_robust(emprate~caprate+factor(year),data=dataf)
 summary(result2)
 
-# 年次固定効果、個体固定効果の導入
+# 年次固定効果、個体固定効果の導入 # 都道府県ごとの違いも補正（個体固定効果）, 都道府県の差、年次の差を同時に取り除いて回帰
 result3 <- estimatr::lm_robust(emprate~caprate+factor(year)+factor(pref),data=dataf) 
 summary(result3)
 
-# もう一つの固定効果の入れ方
+# もう一つの固定効果の入れ方 # factor() を書かずに、fixed_effects 引数で固定効果をまとめて指定, 同じ結果をより簡潔に得られる
 result4 <- estimatr::lm_robust(emprate~caprate,fixed_effects=~pref+year,data=dataf) 
 summary(result4)
 
-# fixestパッケージによる推計, etableで出力
+# fixestパッケージによる推計, etableで出力 
+# | year → 年次固定効果, | pref + year → 個体＋年次固定効果, etable() で 論文用の表形式でまとめて出力
 result_feols1 <- fixest::feols(emprate~caprate,data=dataf)
 result_feols2 <- fixest::feols(emprate~caprate|year,data=dataf)
 result_feols3 <- fixest::feols(emprate~caprate|pref+year,data=dataf)
@@ -41,6 +42,8 @@ fixest::etable(result_feols1,result_feols2,result_feols3,
                signif.code=c("***"=0.01,"**"=0.05,"*"=0.1), se.below = TRUE)
 
 # 時間を通じて変化しない変数、dist_f_tokyo(distance from Tokyo)を導入
+# 固定効果を入れても 時間で変化しない変数は推定可能
+# ログ変換 log(dist_f_tokyo+1) でスケール調整
 result_feols1 <- fixest::feols(emprate~caprate+log(dist_f_tokyo+1),data=dataf)
 result_feols2 <- fixest::feols(emprate~caprate+log(dist_f_tokyo+1)|year,data=dataf)
 result_feols3 <- fixest::feols(emprate~caprate+log(dist_f_tokyo+1)|pref+year,data=dataf)
