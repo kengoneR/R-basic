@@ -12,7 +12,7 @@ dataf <- dataf %>% dplyr::mutate(dist=walk+bus)
 
 # treatダミー作成
 dataf <- dataf %>% dplyr::mutate(treat=if_else(station=="Shonandai",1,0)) 
-
+# station 列の値が "Shonandai" と等しい行なら1、そうでなければ0 を返して、その結果を新しい列 treat に入れる。
 
 # treat*2004年ダミー作成
 dataf <- dataf %>% dplyr::mutate(treat2004=if_else((station=="Shonandai"&year==2004),1,0))
@@ -20,11 +20,11 @@ dataf <- dataf %>% dplyr::mutate(treat2004=if_else((station=="Shonandai"&year==2
 # 2004年ダミー作成
 dataf <- dataf %>% dplyr::mutate(year2004=if_else(year==2004,1,0))
 
-#前後比較分析（湘南台限定）
+#前後比較分析（湘南台限定）# 湘南台駅エリアだけを対象に、2004年施策前後で家賃がどう変わったかを比較
 result1 <-estimatr::lm_robust(rent_total~floor+age+dist+treat2004,data=dataf, station=="Shonandai")
 summary(result1)
 
-#差の差の分析
+#差の差の分析 # 湘南台（treat=1）と**その他エリア（treat=0）**の「家賃変化の差」を比較
 result2 <-estimatr::lm_robust(rent_total~floor+age+dist+treat+year2004+treat2004,data=dataf)
 summary(result2)
 
